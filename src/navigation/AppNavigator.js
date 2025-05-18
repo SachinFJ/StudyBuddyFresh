@@ -7,12 +7,10 @@ import { useSelector } from 'react-redux';
 import HomeScreen from '../screens/HomeScreen';
 import QuizScreen from '../screens/QuizScreen';
 import OnelinerScreen from '../screens/OnelinerScreen';
-
-// MiscQuestionsScreen अनकमेंट कर दिया है
 import MiscQuestionsScreen from '../screens/MiscQuestionsScreen';
+import SuggestBookScreen from '../screens/SuggestBookScreen';
 
 // अभी तक नहीं बनी स्क्रीन्स - बाद में अनकमेंट करें
-// import SuggestBookScreen from '../screens/SuggestBookScreen';
 // import ProgressScreen from '../screens/ProgressScreen';
 // import NotificationsScreen from '../screens/NotificationsScreen';
 // import SettingsScreen from '../screens/SettingsScreen';
@@ -77,12 +75,8 @@ const AppNavigator = () => {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Quiz" component={QuizScreen} />
         <Stack.Screen name="Oneliner" component={OnelinerScreen} />
-        
-        {/* MiscQuestionsScreen अनकमेंट कर दिया है */}
         <Stack.Screen name="MiscQuestions" component={MiscQuestionsScreen} />
-        
-        {/* अभी तक नहीं बनी स्क्रीन्स - बाद में अनकमेंट करें */}
-        {/* <Stack.Screen name="SuggestBook" component={SuggestBookScreen} /> */}
+        <Stack.Screen name="SuggestBook" component={SuggestBookScreen} />
         
         {/* अतिरिक्त स्क्रीन्स - बाद में अनकमेंट करें */}
         {/* <Stack.Screen name="Progress" component={ProgressScreen} /> */}

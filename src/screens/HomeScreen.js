@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StatusBar,
   SafeAreaView,
   FlatList,
+  Animated,
 } from 'react-native';
 
 /**
@@ -19,13 +20,23 @@ const HomeScreen = ({ navigation }) => {
   const [selectedBook, setSelectedBook] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [currentLanguage, setCurrentLanguage] = useState('hindi'); // 'hindi' or 'english'
+  const [fadeAnim] = useState(new Animated.Value(0)); // एनिमेशन वैल्यू
+  
+  // एनिमेशन प्रभाव - स्क्रीन पर लोड होने पर
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true
+    }).start();
+  }, []);
   
   // डेमो डेटा - बाद में API या Redux से आएगा
   const bookList = [
-    { id: 'book1', name: 'सामान्य ज्ञान', color: '#FE7743' },
-    { id: 'book2', name: 'भारतीय इतिहास', color: '#3498DB' },
-    { id: 'book3', name: 'भूगोल', color: '#5B8C5A' },
-    { id: 'book4', name: 'विज्ञान', color: '#9B59B6' },
+    { id: 'book1', name: 'सामान्य ज्ञान', color: '#FE7743', icon: '🧠' },
+    { id: 'book2', name: 'भारतीय इतिहास', color: '#3498DB', icon: '🏛️' },
+    { id: 'book3', name: 'भूगोल', color: '#5B8C5A', icon: '🌍' },
+    { id: 'book4', name: 'विज्ञान', color: '#9B59B6', icon: '🔬' },
   ];
   
   const topicList = [
@@ -84,30 +95,53 @@ const HomeScreen = ({ navigation }) => {
   };
   
   const navigateToMiscQuestions = () => {
-    alert('मिश्रित प्रश्न स्क्रीन पर जा रहे हैं');
     navigation.navigate('MiscQuestions');
   };
   
+  const navigateToSuggestBook = () => {
+    navigation.navigate('SuggestBook');
+  };
+  
   // पुस्तक कार्ड रेंडर
-  const renderBookItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.bookCard,
-        { backgroundColor: item.color },
-        selectedBook?.id === item.id && styles.selectedBookCard
-      ]}
-      onPress={() => handleSelectBook(item)}
-      activeOpacity={0.8}
-    >
-      <Text style={styles.bookCardText}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const renderBookItem = ({ item, index }) => {
+    // कार्ड एनिमेशन लगाने के लिए थोड़ी देरी
+    const delay = index * 100;
+    
+    return (
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [
+            {
+              translateY: fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0]
+              })
+            }
+          ]
+        }}
+      >
+        <TouchableOpacity
+          style={[
+            styles.bookCard,
+            { backgroundColor: item.color },
+            selectedBook?.id === item.id && styles.selectedBookCard
+          ]}
+          onPress={() => handleSelectBook(item)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.bookCardIcon}>{item.icon}</Text>
+          <Text style={styles.bookCardText}>{item.name}</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FE7743" barStyle="light-content" />
       
-      {/* हेडर */}
+      {/* हेडर - साधारण व्यू के साथ */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>StudyBuddy</Text>
         <TouchableOpacity style={styles.langButton} onPress={toggleLanguage}>
@@ -119,7 +153,20 @@ const HomeScreen = ({ navigation }) => {
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* स्वागत संदेश */}
-        <View style={styles.welcome}>
+        <Animated.View 
+          style={[
+            styles.welcome,
+            {
+              opacity: fadeAnim,
+              transform: [{
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0]
+                })
+              }]
+            }
+          ]}
+        >
           <Text style={styles.welcomeTitle}>
             {currentLanguage === 'hindi' ? 'नमस्ते!' : 'Hello!'}
           </Text>
@@ -128,7 +175,7 @@ const HomeScreen = ({ navigation }) => {
               ? 'आज आप क्या सीखना चाहते हैं?' 
               : 'What would you like to learn today?'}
           </Text>
-        </View>
+        </Animated.View>
         
         {/* पुस्तक चुनें */}
         <View style={styles.section}>
@@ -148,13 +195,26 @@ const HomeScreen = ({ navigation }) => {
         
         {/* टॉपिक चुनें - केवल तभी दिखाएं जब पुस्तक चुनी गई हो */}
         {selectedBook && (
-          <View style={styles.section}>
+          <Animated.View 
+            style={[
+              styles.section,
+              {
+                opacity: fadeAnim,
+                transform: [{
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0]
+                  })
+                }]
+              }
+            ]}
+          >
             <Text style={styles.sectionTitle}>
               {currentLanguage === 'hindi' ? 'विषय चुनें' : 'Select Topic'}
             </Text>
             
             <View style={styles.topicList}>
-              {topicList.map(topic => (
+              {topicList.map((topic, index) => (
                 <TouchableOpacity
                   key={topic.id}
                   style={[
@@ -175,7 +235,7 @@ const HomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </Animated.View>
         )}
         
         {/* अध्ययन मोड */}
@@ -258,7 +318,7 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         
-        {/* प्रगति */}
+        {/* प्रगति - अधिक आकर्षक डिज़ाइन के साथ */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {currentLanguage === 'hindi' ? 'आपकी प्रगति' : 'Your Progress'}
@@ -278,19 +338,25 @@ const HomeScreen = ({ navigation }) => {
             
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>98</Text>
+                <View style={styles.statBubble}>
+                  <Text style={styles.statNumber}>98</Text>
+                </View>
                 <Text style={styles.statLabel}>
                   {currentLanguage === 'hindi' ? 'प्रश्न हल किए' : 'Questions Solved'}
                 </Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>8</Text>
+                <View style={styles.statBubble}>
+                  <Text style={styles.statNumber}>8</Text>
+                </View>
                 <Text style={styles.statLabel}>
                   {currentLanguage === 'hindi' ? 'विषय कवर किए' : 'Topics Covered'}
                 </Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>7.2</Text>
+                <View style={styles.statBubble}>
+                  <Text style={styles.statNumber}>7.2</Text>
+                </View>
                 <Text style={styles.statLabel}>
                   {currentLanguage === 'hindi' ? 'औसत स्कोर' : 'Avg. Score'}
                 </Text>
@@ -299,9 +365,12 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
         
-        {/* नई पुस्तक सुझाव */}
+        {/* नई पुस्तक सुझाव - अब नेविगेशन के साथ */}
         <View style={styles.suggestContainer}>
-          <TouchableOpacity style={styles.suggestButton}>
+          <TouchableOpacity 
+            style={styles.suggestButton}
+            onPress={navigateToSuggestBook}
+          >
             <Text style={styles.suggestIcon}>📚</Text>
             <Text style={styles.suggestText}>
               {currentLanguage === 'hindi' ? 'नई पुस्तक सुझाएं' : 'Suggest a New Book'}
@@ -334,15 +403,21 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   langButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   langButtonText: {
     color: '#FFFFFF',
@@ -356,7 +431,7 @@ const styles = StyleSheet.create({
     paddingTop: 25,
   },
   welcomeTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#273F4F',
     marginBottom: 5,
@@ -369,7 +444,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#273F4F',
     marginBottom: 15,
@@ -380,25 +455,30 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   bookCard: {
-    width: 150,
-    height: 80,
-    borderRadius: 12,
+    width: 160,
+    height: 100,
+    borderRadius: 16,
     marginRight: 12,
     padding: 15,
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
   },
   selectedBookCard: {
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
+  bookCardIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+    color: '#FFFFFF',
+  },
   bookCardText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   topicList: {
@@ -410,27 +490,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 25,
     marginHorizontal: 5,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   selectedTopicButton: {
     backgroundColor: '#FE7743',
+    elevation: 4,
   },
   topicIcon: {
-    fontSize: 16,
-    marginRight: 6,
+    fontSize: 18,
+    marginRight: 8,
   },
   topicText: {
     color: '#273F4F',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '500',
   },
   selectedTopicText: {
     color: '#FFFFFF',
@@ -442,14 +524,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
     marginBottom: 12,
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: 16,
+    padding: 18,
     borderLeftWidth: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   quizCard: {
     borderLeftColor: '#FE7743',
@@ -464,77 +546,82 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   modeCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'rgba(254, 119, 67, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
   modeCardIconText: {
-    fontSize: 20,
+    fontSize: 22,
   },
   modeCardContent: {
     flex: 1,
   },
   modeCardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#273F4F',
     marginBottom: 4,
   },
   modeCardDesc: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666666',
   },
   modeCardArrow: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FE7743',
   },
   progressCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   progressTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#273F4F',
   },
   progressPercent: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FE7743',
   },
   progressBarContainer: {
-    height: 8,
+    height: 10,
     backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    marginBottom: 15,
+    borderRadius: 5,
+    marginBottom: 20,
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#FE7743',
-    borderRadius: 4,
+    borderRadius: 5,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 10,
+    paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
@@ -542,11 +629,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  statBubble: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(254, 119, 67, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#273F4F',
-    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
@@ -561,20 +656,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 15,
+    padding: 18,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: '#273F4F',
     borderStyle: 'dashed',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   suggestIcon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 20,
+    marginRight: 10,
   },
   suggestText: {
     color: '#273F4F',
     fontWeight: '500',
+    fontSize: 16,
   },
   footer: {
     alignItems: 'center',

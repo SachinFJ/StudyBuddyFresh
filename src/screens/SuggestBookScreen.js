@@ -1,263 +1,187 @@
-// SuggestBookScreen.js - पुस्तक सुझाव स्क्रीन
-
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
+  TextInput,
   TouchableOpacity,
+  StatusBar,
+  SafeAreaView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
 } from 'react-native';
-import { useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
-// कंपोनेंट्स
-import Header from '../components/common/Header';
-import CustomInput from '../components/common/CustomInput';
-import CustomButton from '../components/common/CustomButton';
-
-// थीम
-import Theme from '../utils/Theme';
 
 /**
- * पुस्तक सुझाव स्क्रीन कंपोनेंट
- * यूजर्स द्वारा नई पुस्तकों के सुझाव के लिए फॉर्म
+ * SuggestBookScreen - नई पुस्तक सुझाव फॉर्म
+ * यूज़र्स नई पुस्तकें जोड़ने का सुझाव दे सकते हैं
+ * @param {Object} navigation - नेविगेशन प्रॉप
  */
-const SuggestBookScreen = () => {
-  const navigation = useNavigation();
-  
-  // रेडक्स स्टेट से डेटा प्राप्त करें
-  const { current: currentLanguage } = useSelector((state) => state.language);
-  
-  // फॉर्म स्टेट
+const SuggestBookScreen = ({ navigation }) => {
+  // स्टेट वेरिएबल्स
   const [bookName, setBookName] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState('hindi'); // 'hindi' or 'english'
   
-  // वैलिडेशन स्टेट
-  const [errors, setErrors] = useState({
-    bookName: '',
-    authorName: '',
-    category: '',
-    description: '',
-  });
-  
+  // भाषा टॉगल हैंडलर
+  const toggleLanguage = () => {
+    setCurrentLanguage(currentLanguage === 'hindi' ? 'english' : 'hindi');
+  };
+
   // फॉर्म सबमिट हैंडलर
   const handleSubmit = () => {
-    // फॉर्म वैलिडेशन
-    const newErrors = {};
-    
+    // बेसिक वैलिडेशन
     if (!bookName.trim()) {
-      newErrors.bookName =
-        currentLanguage === 'hindi'
-          ? 'पुस्तक का नाम आवश्यक है'
-          : 'Book name is required';
-    }
-    
-    if (!authorName.trim()) {
-      newErrors.authorName =
-        currentLanguage === 'hindi'
-          ? 'लेखक का नाम आवश्यक है'
-          : 'Author name is required';
-    }
-    
-    if (!category.trim()) {
-      newErrors.category =
-        currentLanguage === 'hindi'
-          ? 'श्रेणी आवश्यक है'
-          : 'Category is required';
-    }
-    
-    if (!description.trim()) {
-      newErrors.description =
-        currentLanguage === 'hindi'
-          ? 'विवरण आवश्यक है'
-          : 'Description is required';
-    }
-    
-    setErrors(newErrors);
-    
-    // यदि कोई एरर नहीं है, तो फॉर्म सबमिट करें
-    if (Object.keys(newErrors).length === 0) {
-      // यहाँ एपीआई कॉल या डेटा स्टोरेज कोड होगा
-      // अभी के लिए, हम केवल एक अलर्ट दिखाएंगे
-      
       Alert.alert(
-        currentLanguage === 'hindi'
-          ? 'सुझाव प्राप्त हुआ'
-          : 'Suggestion Received',
-        currentLanguage === 'hindi'
-          ? 'आपका पुस्तक सुझाव सफलतापूर्वक प्राप्त हो गया है। हम जल्द ही इसकी समीक्षा करेंगे।'
-          : 'Your book suggestion has been successfully received. We will review it soon.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // फॉर्म रीसेट करें
-              setBookName('');
-              setAuthorName('');
-              setCategory('');
-              setDescription('');
-              setAdditionalInfo('');
-              setErrors({});
-              
-              // होम स्क्रीन पर वापस जाएँ
-              navigation.navigate('Home');
-            },
-          },
-        ]
+        currentLanguage === 'hindi' ? 'त्रुटि' : 'Error',
+        currentLanguage === 'hindi' 
+          ? 'कृपया पुस्तक का नाम दर्ज करें' 
+          : 'Please enter the book name'
       );
+      return;
     }
+    
+    // यहां API कॉल या डेटा सेविंग लॉजिक आएगा
+    // डेमो के लिए अभी सिर्फ सक्सेस दिखाएंगे
+    Alert.alert(
+      currentLanguage === 'hindi' ? 'सफलता' : 'Success',
+      currentLanguage === 'hindi'
+        ? 'आपका सुझाव सफलतापूर्वक जमा किया गया है।'
+        : 'Your suggestion has been submitted successfully.',
+      [
+        { 
+          text: currentLanguage === 'hindi' ? 'ठीक है' : 'OK', 
+          onPress: () => navigation.navigate('Home')
+        }
+      ]
+    );
   };
-  
-  // फॉर्म रीसेट हैंडलर
-  const handleReset = () => {
-    setBookName('');
-    setAuthorName('');
-    setCategory('');
-    setDescription('');
-    setAdditionalInfo('');
-    setErrors({});
+
+  // वापस जाने का हैंडलर
+  const handleGoBack = () => {
+    navigation.goBack();
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        title={
-          currentLanguage === 'hindi' ? 'पुस्तक सुझाएँ' : 'Suggest Book'
-        }
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-      />
+      <StatusBar backgroundColor="#FE7743" barStyle="light-content" />
       
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.headerContainer}>
-            <Ionicons
-              name="book-outline"
-              size={48}
-              color={Theme.COLORS.PRIMARY}
-              style={styles.headerIcon}
-            />
-            
-            <Text style={styles.headerTitle}>
-              {currentLanguage === 'hindi'
-                ? 'नई पुस्तक सुझाएँ'
-                : 'Suggest a New Book'}
+      {/* हेडर */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {currentLanguage === 'hindi' ? 'नई पुस्तक सुझाएं' : 'Suggest a New Book'}
+        </Text>
+        <TouchableOpacity style={styles.langButton} onPress={toggleLanguage}>
+          <Text style={styles.langButtonText}>
+            {currentLanguage === 'hindi' ? 'EN' : 'हिं'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* फॉर्म इंट्रो */}
+        <View style={styles.formIntro}>
+          <Text style={styles.formIntroText}>
+            {currentLanguage === 'hindi' 
+              ? 'हमें उन पुस्तकों के बारे में बताएं जो आप ऐप पर जोड़ना चाहते हैं। आपके सुझाव हमारे लिए महत्वपूर्ण हैं।' 
+              : 'Tell us about books you would like to see added to the app. Your suggestions are valuable to us.'}
+          </Text>
+        </View>
+        
+        {/* फॉर्म */}
+        <View style={styles.formContainer}>
+          {/* पुस्तक का नाम */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {currentLanguage === 'hindi' ? 'पुस्तक का नाम *' : 'Book Name *'}
             </Text>
-            
-            <Text style={styles.headerSubtitle}>
-              {currentLanguage === 'hindi'
-                ? 'हम आपके सुझावों का स्वागत करते हैं! कृपया नीचे दिए गए फॉर्म को भरें।'
-                : 'We welcome your suggestions! Please fill in the form below.'}
-            </Text>
-          </View>
-          
-          <View style={styles.formContainer}>
-            <CustomInput
-              label={currentLanguage === 'hindi' ? 'पुस्तक का नाम *' : 'Book Name *'}
+            <TextInput
+              style={styles.textInput}
               value={bookName}
               onChangeText={setBookName}
-              placeholder={
-                currentLanguage === 'hindi'
-                  ? 'पुस्तक का नाम दर्ज करें'
-                  : 'Enter book name'
-              }
-              error={errors.bookName}
+              placeholder={currentLanguage === 'hindi' ? 'पुस्तक का नाम दर्ज करें' : 'Enter book name'}
+              placeholderTextColor="#999"
             />
-            
-            <CustomInput
-              label={currentLanguage === 'hindi' ? 'लेखक का नाम *' : 'Author Name *'}
+          </View>
+          
+          {/* लेखक का नाम */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {currentLanguage === 'hindi' ? 'लेखक का नाम' : 'Author Name'}
+            </Text>
+            <TextInput
+              style={styles.textInput}
               value={authorName}
               onChangeText={setAuthorName}
-              placeholder={
-                currentLanguage === 'hindi'
-                  ? 'लेखक का नाम दर्ज करें'
-                  : 'Enter author name'
-              }
-              error={errors.authorName}
+              placeholder={currentLanguage === 'hindi' ? 'लेखक का नाम दर्ज करें' : 'Enter author name'}
+              placeholderTextColor="#999"
             />
-            
-            <CustomInput
-              label={currentLanguage === 'hindi' ? 'श्रेणी *' : 'Category *'}
+          </View>
+          
+          {/* श्रेणी */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {currentLanguage === 'hindi' ? 'श्रेणी' : 'Category'}
+            </Text>
+            <TextInput
+              style={styles.textInput}
               value={category}
               onChangeText={setCategory}
-              placeholder={
-                currentLanguage === 'hindi'
-                  ? 'श्रेणी दर्ज करें (उदा. इतिहास, विज्ञान)'
-                  : 'Enter category (e.g., History, Science)'
-              }
-              error={errors.category}
+              placeholder={currentLanguage === 'hindi' ? 'उदाहरण: इतिहास, विज्ञान, आदि' : 'Example: History, Science, etc.'}
+              placeholderTextColor="#999"
             />
-            
-            <CustomInput
-              label={currentLanguage === 'hindi' ? 'विवरण *' : 'Description *'}
+          </View>
+          
+          {/* विवरण */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {currentLanguage === 'hindi' ? 'विवरण' : 'Description'}
+            </Text>
+            <TextInput
+              style={[styles.textInput, styles.textAreaInput]}
               value={description}
               onChangeText={setDescription}
-              placeholder={
-                currentLanguage === 'hindi'
-                  ? 'पुस्तक का संक्षिप्त विवरण दर्ज करें'
-                  : 'Enter a brief description of the book'
-              }
-              multiline={true}
-              error={errors.description}
+              placeholder={currentLanguage === 'hindi' 
+                ? 'पुस्तक के बारे में संक्षिप्त विवरण दें'
+                : 'Provide a brief description about the book'}
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
             />
-            
-            <CustomInput
-              label={
-                currentLanguage === 'hindi'
-                  ? 'अतिरिक्त जानकारी (वैकल्पिक)'
-                  : 'Additional Information (Optional)'
-              }
-              value={additionalInfo}
-              onChangeText={setAdditionalInfo}
-              placeholder={
-                currentLanguage === 'hindi'
-                  ? 'कोई अतिरिक्त जानकारी या सुझाव'
-                  : 'Any additional information or suggestions'
-              }
-              multiline={true}
-            />
-            
-            <View style={styles.requiredFieldsNote}>
-              <Text style={styles.requiredFieldsText}>
-                * {currentLanguage === 'hindi' ? 'आवश्यक फील्ड' : 'Required fields'}
-              </Text>
-            </View>
-            
-            <View style={styles.buttonContainer}>
-              <CustomButton
-                title={currentLanguage === 'hindi' ? 'सबमिट करें' : 'Submit'}
-                onPress={handleSubmit}
-                style={styles.submitButton}
-              />
-              
-              <CustomButton
-                title={currentLanguage === 'hindi' ? 'रीसेट करें' : 'Reset'}
-                onPress={handleReset}
-                type="outline"
-                style={styles.resetButton}
-              />
-            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          
+          {/* नोट */}
+          <Text style={styles.noteText}>
+            {currentLanguage === 'hindi' 
+              ? '* अनिवार्य फील्ड्स'
+              : '* Required fields'}
+          </Text>
+          
+          {/* सबमिट बटन */}
+          <TouchableOpacity 
+            style={styles.submitButton}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.submitButtonText}>
+              {currentLanguage === 'hindi' ? 'सुझाव जमा करें' : 'Submit Suggestion'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* नोट */}
+        <View style={styles.disclaimerContainer}>
+          <Text style={styles.disclaimerText}>
+            {currentLanguage === 'hindi' 
+              ? 'नोट: सभी सुझाव समीक्षा के अधीन हैं। हम आपकी पुस्तक की उपलब्धता और प्रासंगिकता के आधार पर इसे जोड़ने का प्रयास करेंगे।'
+              : 'Note: All suggestions are subject to review. We will try to add your book based on availability and relevance.'}
+          </Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -265,64 +189,113 @@ const SuggestBookScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.COLORS.BACKGROUND,
+    backgroundColor: '#EFEEEA',
   },
-  keyboardAvoidingView: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FE7743',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     flex: 1,
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 5,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  langButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  langButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: Theme.SPACING.REGULAR,
-    paddingBottom: Theme.SPACING.XXLARGE,
+  formIntro: {
+    padding: 20,
+    paddingTop: 25,
   },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: Theme.SPACING.LARGE,
-  },
-  headerIcon: {
-    marginBottom: Theme.SPACING.REGULAR,
-  },
-  headerTitle: {
-    fontSize: Theme.FONT_SIZES.XLARGE,
-    fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
-    marginBottom: Theme.SPACING.SMALL,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: Theme.FONT_SIZES.REGULAR,
-    color: Theme.COLORS.TEXT,
-    textAlign: 'center',
+  formIntroText: {
+    fontSize: 16,
+    color: '#666666',
+    lineHeight: 22,
   },
   formContainer: {
-    backgroundColor: Theme.COLORS.WHITE,
-    borderRadius: Theme.BORDER_RADIUS.REGULAR,
-    padding: Theme.SPACING.LARGE,
-    ...Theme.COMPONENT_STYLES.SHADOW,
+    backgroundColor: '#FFFFFF',
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  requiredFieldsNote: {
-    marginTop: Theme.SPACING.SMALL,
-    marginBottom: Theme.SPACING.REGULAR,
+  inputGroup: {
+    marginBottom: 20,
   },
-  requiredFieldsText: {
-    fontSize: Theme.FONT_SIZES.SMALL,
-    color: Theme.COLORS.MEDIUM_GRAY,
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#273F4F',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#000000',
+  },
+  textAreaInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  noteText: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 20,
     fontStyle: 'italic',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: Theme.SPACING.REGULAR,
-  },
   submitButton: {
-    flex: 1,
-    marginRight: Theme.SPACING.SMALL,
+    backgroundColor: '#FE7743',
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  resetButton: {
-    flex: 1,
-    marginLeft: Theme.SPACING.SMALL,
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disclaimerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  disclaimerText: {
+    fontSize: 12,
+    color: '#666666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
