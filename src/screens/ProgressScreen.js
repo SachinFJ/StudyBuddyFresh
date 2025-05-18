@@ -9,19 +9,16 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-// चार्ट लाइब्रेरी आयात को हटा दिया है
 
 // कंपोनेंट्स
 import Header from '../components/common/Header';
 import CustomCard from '../components/common/CustomCard';
 import ProgressIndicator from '../components/common/ProgressIndicator';
-
-// थीम
-import Theme from '../utils/Theme';
 
 /**
  * प्रगति स्क्रीन कंपोनेंट
@@ -29,6 +26,9 @@ import Theme from '../utils/Theme';
  */
 const ProgressScreen = () => {
   const navigation = useNavigation();
+  
+  // एनिमेशन वैल्यू
+  const [fadeAnim] = useState(new Animated.Value(0));
   
   // रेडक्स स्टेट से डेटा प्राप्त करें
   const { current: currentLanguage } = useSelector((state) => state.language);
@@ -53,6 +53,15 @@ const ProgressScreen = () => {
   
   // स्क्रीन की चौड़ाई प्राप्त करें
   const screenWidth = Dimensions.get('window').width;
+  
+  // एनिमेशन शुरू करें
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
   
   // चार्ट्स के लिए समय अवधि के आधार पर डेटा फिल्टर करें
   useEffect(() => {
@@ -374,7 +383,7 @@ const ProgressScreen = () => {
           <Ionicons
             name="bar-chart-outline"
             size={48}
-            color={Theme.COLORS.MEDIUM_GRAY}
+            color="#669BBC"
           />
           
           <Text style={styles.noDataText}>
@@ -401,10 +410,19 @@ const ProgressScreen = () => {
         
         {/* डेटा रोज़ */}
         {data.slice(0, 5).map((item, rowIndex) => (
-          <View key={rowIndex} style={styles.tableRow}>
+          <View key={rowIndex} style={[
+            styles.tableRow, 
+            rowIndex % 2 === 0 ? styles.evenRow : null
+          ]}>
             {Object.values(item).map((value, cellIndex) => (
-              <Text key={cellIndex} style={styles.tableCell}>
+              <Text key={cellIndex} style={[
+                styles.tableCell,
+                cellIndex === 3 && item.accuracy >= 70 && styles.highAccuracyCell,
+                cellIndex === 3 && item.accuracy < 70 && item.accuracy >= 40 && styles.mediumAccuracyCell,
+                cellIndex === 3 && item.accuracy < 40 && styles.lowAccuracyCell,
+              ]}>
                 {value}
+                {cellIndex === 3 ? '%' : ''}
               </Text>
             ))}
           </View>
@@ -427,7 +445,7 @@ const ProgressScreen = () => {
       <Ionicons
         name={icon}
         size={48}
-        color={Theme.COLORS.MEDIUM_GRAY}
+        color="#669BBC"
       />
       
       <Text style={styles.chartPlaceholderText}>
@@ -440,18 +458,22 @@ const ProgressScreen = () => {
   
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        title={currentLanguage === 'hindi' ? 'प्रगति' : 'Progress'}
-        showBackButton={true}
-        onBackPress={() => navigation.goBack()}
-      />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {currentLanguage === 'hindi' ? 'आपकी प्रगति' : 'Your Progress'}
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
       
       <ScrollView style={styles.scrollView}>
         {/* समय अवधि सेलेक्टर */}
         <PeriodSelector />
         
         {/* प्रगति सारांश */}
-        <View style={styles.summaryContainer}>
+        <Animated.View style={[styles.summaryContainer, { opacity: fadeAnim }]}>
           <Text style={styles.sectionTitle}>
             {currentLanguage === 'hindi' ? 'आपका सारांश' : 'Your Summary'}
           </Text>
@@ -461,7 +483,7 @@ const ProgressScreen = () => {
               <Ionicons
                 name="help-circle-outline"
                 size={28}
-                color={Theme.COLORS.PRIMARY}
+                color="#C1121F"
                 style={styles.statsIcon}
               />
               
@@ -478,7 +500,7 @@ const ProgressScreen = () => {
               <Ionicons
                 name="checkmark-circle-outline"
                 size={28}
-                color={Theme.COLORS.SUCCESS}
+                color="#669BBC"
                 style={styles.statsIcon}
               />
               
@@ -495,7 +517,7 @@ const ProgressScreen = () => {
               <Ionicons
                 name="document-text-outline"
                 size={28}
-                color={Theme.COLORS.SECONDARY}
+                color="#780000"
                 style={styles.statsIcon}
               />
               
@@ -512,7 +534,7 @@ const ProgressScreen = () => {
               <Ionicons
                 name="time-outline"
                 size={28}
-                color={Theme.COLORS.PRIMARY}
+                color="#003049"
                 style={styles.statsIcon}
               />
               
@@ -532,36 +554,62 @@ const ProgressScreen = () => {
               {currentLanguage === 'hindi' ? 'सटीकता' : 'Accuracy'}
             </Text>
             
-            <ProgressIndicator
-              current={Math.round(averageAccuracy)}
-              total={100}
-              showPercentage={true}
-              progressColor={
-                averageAccuracy >= 70
-                  ? Theme.COLORS.SUCCESS
+            <View style={styles.accuracyBox}>
+              <Text style={styles.accuracyPercentage}>{Math.round(averageAccuracy)}%</Text>
+              <View style={styles.progressBarContainer}>
+                <ProgressIndicator
+                  current={Math.round(averageAccuracy)}
+                  total={100}
+                  showPercentage={false}
+                  progressColor={
+                    averageAccuracy >= 70
+                      ? "#669BBC"
+                      : averageAccuracy >= 40
+                      ? "#FE7743"
+                      : "#C1121F"
+                  }
+                  styles={{
+                    container: styles.progressBarContainer,
+                    progress: styles.progressBar
+                  }}
+                />
+              </View>
+              <Text style={styles.accuracyText}>
+                {averageAccuracy >= 70
+                  ? currentLanguage === 'hindi' ? 'उत्कृष्ट प्रदर्शन!' : 'Excellent!'
                   : averageAccuracy >= 40
-                  ? Theme.COLORS.WARNING
-                  : Theme.COLORS.ERROR
-              }
-            />
+                  ? currentLanguage === 'hindi' ? 'अच्छी प्रगति!' : 'Good progress!'
+                  : currentLanguage === 'hindi' ? 'और अभ्यास करें' : 'Keep practicing!'}
+              </Text>
+            </View>
           </View>
-        </View>
+        </Animated.View>
         
         {/* प्रगति चार्ट्स */}
-        <View style={styles.chartsContainer}>
+        <Animated.View 
+          style={[
+            styles.chartsContainer, 
+            { 
+              opacity: fadeAnim,
+              transform: [{
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0]
+                })
+              }]
+            }
+          ]}
+        >
           <Text style={styles.sectionTitle}>
             {currentLanguage === 'hindi' ? 'प्रगति विश्लेषण' : 'Progress Analysis'}
           </Text>
           
           {/* क्विज़ प्रगति */}
-          <CustomCard
-            title={
-              currentLanguage === 'hindi'
-                ? 'क्विज़ प्रगति'
-                : 'Quiz Progress'
-            }
-            style={styles.chartCard}
-          >
+          <View style={styles.chartCard}>
+            <Text style={styles.chartCardTitle}>
+              {currentLanguage === 'hindi' ? 'क्विज़ प्रगति' : 'Quiz Progress'}
+            </Text>
+            
             {filteredQuizActivity.length > 0 ? (
               <DataSummaryTable 
                 data={getQuizProgressSummary()}
@@ -570,7 +618,7 @@ const ProgressScreen = () => {
                   currentLanguage === 'hindi' ? 'दिन' : 'Date',
                   currentLanguage === 'hindi' ? 'कुल' : 'Total',
                   currentLanguage === 'hindi' ? 'सही' : 'Correct',
-                  currentLanguage === 'hindi' ? 'सटीकता %' : 'Accuracy %'
+                  currentLanguage === 'hindi' ? 'सटीकता' : 'Accuracy'
                 ]}
               />
             ) : (
@@ -579,17 +627,14 @@ const ProgressScreen = () => {
                 message={currentLanguage === 'hindi' ? 'अभी तक कोई डेटा नहीं' : 'No data yet'}
               />
             )}
-          </CustomCard>
+          </View>
           
           {/* अध्ययन समय */}
-          <CustomCard
-            title={
-              currentLanguage === 'hindi'
-                ? 'अध्ययन समय (मिनट)'
-                : 'Study Time (minutes)'
-            }
-            style={styles.chartCard}
-          >
+          <View style={styles.chartCard}>
+            <Text style={styles.chartCardTitle}>
+              {currentLanguage === 'hindi' ? 'अध्ययन समय (मिनट)' : 'Study Time (minutes)'}
+            </Text>
+            
             {totalTimeSpent > 0 ? (
               <DataSummaryTable 
                 data={getStudyTimeSummary()}
@@ -599,7 +644,7 @@ const ProgressScreen = () => {
                   currentLanguage === 'hindi' ? 'क्विज़' : 'Quiz',
                   currentLanguage === 'hindi' ? 'वनलाइनर' : 'Oneliner',
                   currentLanguage === 'hindi' ? 'मिश्रित' : 'Mixed',
-                  currentLanguage === 'hindi' ? 'कुल मिनट' : 'Total Min'
+                  currentLanguage === 'hindi' ? 'कुल' : 'Total'
                 ]}
               />
             ) : (
@@ -608,17 +653,14 @@ const ProgressScreen = () => {
                 message={currentLanguage === 'hindi' ? 'अभी तक कोई डेटा नहीं' : 'No data yet'}
               />
             )}
-          </CustomCard>
+          </View>
           
           {/* टॉपिक वाइज स्कोर */}
-          <CustomCard
-            title={
-              currentLanguage === 'hindi'
-                ? 'टॉपिक वाइज सटीकता'
-                : 'Topic-wise Accuracy'
-            }
-            style={styles.chartCard}
-          >
+          <View style={styles.chartCard}>
+            <Text style={styles.chartCardTitle}>
+              {currentLanguage === 'hindi' ? 'टॉपिक वाइज सटीकता' : 'Topic-wise Accuracy'}
+            </Text>
+            
             {filteredQuizActivity.length > 0 ? (
               <DataSummaryTable 
                 data={getTopicWiseSummary()}
@@ -627,7 +669,7 @@ const ProgressScreen = () => {
                   currentLanguage === 'hindi' ? 'टॉपिक' : 'Topic',
                   currentLanguage === 'hindi' ? 'कुल' : 'Total',
                   currentLanguage === 'hindi' ? 'सही' : 'Correct',
-                  currentLanguage === 'hindi' ? 'सटीकता %' : 'Accuracy %'
+                  currentLanguage === 'hindi' ? 'सटीकता' : 'Accuracy'
                 ]}
               />
             ) : (
@@ -636,8 +678,8 @@ const ProgressScreen = () => {
                 message={currentLanguage === 'hindi' ? 'अभी तक कोई डेटा नहीं' : 'No data yet'}
               />
             )}
-          </CustomCard>
-        </View>
+          </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -646,7 +688,34 @@ const ProgressScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.COLORS.BACKGROUND,
+    backgroundColor: '#FDF0D5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#003049',
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -654,152 +723,233 @@ const styles = StyleSheet.create({
   periodSelectorContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    padding: Theme.SPACING.REGULAR,
-    backgroundColor: Theme.COLORS.WHITE,
-    marginBottom: Theme.SPACING.REGULAR,
+    padding: 15,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.COLORS.LIGHT_GRAY,
+    borderBottomColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   periodButton: {
-    paddingHorizontal: Theme.SPACING.LARGE,
-    paddingVertical: Theme.SPACING.SMALL,
-    borderRadius: Theme.BORDER_RADIUS.SMALL,
-    marginHorizontal: Theme.SPACING.SMALL,
-    backgroundColor: Theme.COLORS.LIGHT_GRAY,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginHorizontal: 8,
+    backgroundColor: '#F0F0F0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   selectedPeriodButton: {
-    backgroundColor: Theme.COLORS.PRIMARY,
+    backgroundColor: '#003049',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   periodButtonText: {
-    fontSize: Theme.FONT_SIZES.MEDIUM,
-    color: Theme.COLORS.SECONDARY,
+    fontSize: 15,
+    color: '#003049',
     fontWeight: '500',
   },
   selectedPeriodButtonText: {
-    color: Theme.COLORS.WHITE,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   summaryContainer: {
-    padding: Theme.SPACING.REGULAR,
+    padding: 15,
   },
   sectionTitle: {
-    fontSize: Theme.FONT_SIZES.LARGE,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
-    marginBottom: Theme.SPACING.REGULAR,
-    paddingHorizontal: Theme.SPACING.REGULAR,
+    color: '#003049',
+    marginBottom: 15,
+    paddingHorizontal: 5,
   },
   statsGridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: Theme.SPACING.REGULAR,
+    marginBottom: 15,
   },
   statsCard: {
     width: '48%',
-    backgroundColor: Theme.COLORS.WHITE,
-    borderRadius: Theme.BORDER_RADIUS.REGULAR,
-    padding: Theme.SPACING.REGULAR,
-    marginBottom: Theme.SPACING.REGULAR,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
     alignItems: 'center',
-    ...Theme.COMPONENT_STYLES.SHADOW,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
   statsIcon: {
-    marginBottom: Theme.SPACING.SMALL,
+    marginBottom: 8,
   },
   statsNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
-    marginBottom: Theme.SPACING.TINY,
+    color: '#003049',
+    marginBottom: 5,
   },
   statsLabel: {
-    fontSize: Theme.FONT_SIZES.SMALL,
-    color: Theme.COLORS.MEDIUM_GRAY,
+    fontSize: 13,
+    color: '#666666',
     textAlign: 'center',
   },
   accuracyContainer: {
-    backgroundColor: Theme.COLORS.WHITE,
-    borderRadius: Theme.BORDER_RADIUS.REGULAR,
-    padding: Theme.SPACING.REGULAR,
-    ...Theme.COMPONENT_STYLES.SHADOW,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
   accuracyLabel: {
-    fontSize: Theme.FONT_SIZES.MEDIUM,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
-    marginBottom: Theme.SPACING.SMALL,
+    color: '#003049',
+    marginBottom: 12,
+  },
+  accuracyBox: {
+    alignItems: 'center',
+  },
+  accuracyPercentage: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#C1121F',
+    marginBottom: 10,
+  },
+  progressBarContainer: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 5,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  accuracyText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#003049',
   },
   chartsContainer: {
-    padding: Theme.SPACING.REGULAR,
+    padding: 15,
     paddingTop: 0,
   },
   chartCard: {
-    marginBottom: Theme.SPACING.LARGE,
-    padding: Theme.SPACING.REGULAR,
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  chartCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#003049',
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingBottom: 10,
   },
   chartPlaceholderContainer: {
-    height: 220,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Theme.COLORS.WHITE,
-    borderRadius: Theme.BORDER_RADIUS.REGULAR,
-    padding: Theme.SPACING.LARGE,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 10,
+    padding: 20,
+    marginTop: 10,
   },
   chartPlaceholderText: {
-    marginTop: Theme.SPACING.REGULAR,
-    fontSize: Theme.FONT_SIZES.MEDIUM,
-    color: Theme.COLORS.MEDIUM_GRAY,
+    marginTop: 15,
+    fontSize: 15,
+    color: '#666666',
     textAlign: 'center',
   },
   noDataContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Theme.SPACING.LARGE,
+    padding: 20,
   },
   noDataText: {
-    fontSize: Theme.FONT_SIZES.MEDIUM,
-    color: Theme.COLORS.MEDIUM_GRAY,
-    marginTop: Theme.SPACING.REGULAR,
+    fontSize: 15,
+    color: '#666666',
+    marginTop: 15,
     textAlign: 'center',
   },
   // टेबल स्टाइल्स
   tableSummaryContainer: {
-    padding: Theme.SPACING.SMALL,
+    padding: 10,
   },
   tableSummaryTitle: {
-    fontSize: Theme.FONT_SIZES.MEDIUM,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
-    marginBottom: Theme.SPACING.MEDIUM,
+    color: '#003049',
+    marginBottom: 12,
     textAlign: 'center',
   },
   tableRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: Theme.SPACING.SMALL,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.COLORS.LIGHT_GRAY,
+    borderBottomColor: '#F0F0F0',
+  },
+  evenRow: {
+    backgroundColor: '#F8F8F8',
   },
   tableHeader: {
     flex: 1,
-    fontSize: Theme.FONT_SIZES.SMALL,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: Theme.COLORS.SECONDARY,
+    color: '#003049',
     textAlign: 'center',
   },
   tableCell: {
     flex: 1,
-    fontSize: Theme.FONT_SIZES.SMALL,
-    color: Theme.COLORS.TEXT,
+    fontSize: 14,
+    color: '#333333',
     textAlign: 'center',
   },
+  highAccuracyCell: {
+    color: '#669BBC',
+    fontWeight: 'bold',
+  },
+  mediumAccuracyCell: {
+    color: '#FE7743',
+    fontWeight: 'bold',
+  },
+  lowAccuracyCell: {
+    color: '#C1121F',
+    fontWeight: 'bold',
+  },
   moreDataText: {
-    fontSize: Theme.FONT_SIZES.SMALL,
-    color: Theme.COLORS.MEDIUM_GRAY,
+    fontSize: 13,
+    color: '#666666',
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: Theme.SPACING.SMALL,
+    marginTop: 10,
   },
 });
 

@@ -9,9 +9,9 @@ import QuizScreen from '../screens/QuizScreen';
 import OnelinerScreen from '../screens/OnelinerScreen';
 import MiscQuestionsScreen from '../screens/MiscQuestionsScreen';
 import SuggestBookScreen from '../screens/SuggestBookScreen';
+import ProgressScreen from '../screens/ProgressScreen'; // प्रगति स्क्रीन जोड़ी
 
 // अभी तक नहीं बनी स्क्रीन्स - बाद में अनकमेंट करें
-// import ProgressScreen from '../screens/ProgressScreen';
 // import NotificationsScreen from '../screens/NotificationsScreen';
 // import SettingsScreen from '../screens/SettingsScreen';
 // import ProfileScreen from '../screens/ProfileScreen';
@@ -29,11 +29,13 @@ const AppNavigator = () => {
   // रेडक्स से थीम कलर प्राप्त कर सकते हैं
   // const { COLORS } = useSelector(state => state.theme);
   
-  // अभी के लिए हार्डकोडेड कलर्स का उपयोग
+  // अब नई कलर पैलेट उपयोग कर रहे हैं
   const COLORS = {
-    PRIMARY: '#FE7743',
-    BACKGROUND: '#EFEEEA',
-    SECONDARY: '#273F4F',
+    PRIMARY: '#003049',
+    SECONDARY: '#C1121F',
+    BACKGROUND: '#FDF0D5',
+    ACCENT1: '#669BBC',
+    ACCENT2: '#780000',
   };
 
   return (
@@ -77,9 +79,9 @@ const AppNavigator = () => {
         <Stack.Screen name="Oneliner" component={OnelinerScreen} />
         <Stack.Screen name="MiscQuestions" component={MiscQuestionsScreen} />
         <Stack.Screen name="SuggestBook" component={SuggestBookScreen} />
+        <Stack.Screen name="Progress" component={ProgressScreen} />
         
         {/* अतिरिक्त स्क्रीन्स - बाद में अनकमेंट करें */}
-        {/* <Stack.Screen name="Progress" component={ProgressScreen} /> */}
         {/* <Stack.Screen name="Notifications" component={NotificationsScreen} /> */}
         {/* <Stack.Screen name="Settings" component={SettingsScreen} /> */}
         {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}

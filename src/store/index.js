@@ -1,15 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import booksReducer from './slices/booksSlice';
+import subjectsReducer from './slices/subjectsSlice';
+import topicsReducer from './slices/topicsSlice';
 import languageReducer from './slices/languageSlice';
 import progressReducer from './slices/progressSlice';
 
-/**
- * Redux स्टोर कॉन्फिगरेशन
- * यहां सभी reducers को एक जगह combine किया जाता है
- */
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     books: booksReducer,
+    subjects: subjectsReducer,
+    topics: topicsReducer,
     language: languageReducer,
     progress: progressReducer,
   },

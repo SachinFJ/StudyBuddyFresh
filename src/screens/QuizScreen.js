@@ -14,12 +14,12 @@ import {
 
 /**
  * QuizScreen - क्विज़ स्क्रीन जहां यूजर क्विज़ प्रश्नों का अभ्यास कर सकता है
- * @param {Object} route - नेविगेशन रूट जिसमें bookId, topicId होगा
+ * @param {Object} route - नेविगेशन रूट जिसमें bookId, subjectId, topicId होगा
  * @param {Object} navigation - नेविगेशन कंट्रोलर
  */
 const QuizScreen = ({ route, navigation }) => {
   // रूट पैरामीटर्स से डेटा प्राप्त करें
-  const { bookId, topicId } = route?.params || { bookId: 'book1', topicId: 'topic1' };
+  const { bookId, subjectId, topicId } = route?.params || { bookId: 'book1', subjectId: 'subject1', topicId: 'topic1' };
   
   // स्टेट
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -30,10 +30,13 @@ const QuizScreen = ({ route, navigation }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(true);
   const [showTimeoutModal, setShowTimeoutModal] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false); // इमोजी दिखाने के लिए नया स्टेट
+  const [isCorrect, setIsCorrect] = useState(false); // सही/गलत उत्तर का स्टेट
   
   // एनिमेशन वैल्यूज़
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const emojiAnim = useRef(new Animated.Value(0)).current; // इमोजी के लिए एनिमेशन
   
   // टाइमर रेफरेंस
   const timerRef = useRef(null);
@@ -144,6 +147,7 @@ const QuizScreen = ({ route, navigation }) => {
     
     setSelectedAnswer(null);
     setShowAnswer(false);
+    setShowEmoji(false); // इमोजी को हटाएं 
   }, [currentQuestion, fadeAnim, progressAnim]);
   
   // बैक बटन हैंडलर
@@ -172,17 +176,40 @@ const QuizScreen = ({ route, navigation }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // इमोजी एनिमेशन प्रारंभ करें
+  const startEmojiAnimation = () => {
+    emojiAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(emojiAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.delay(1200), // इमोजी को लंबे समय तक दिखाएं
+      Animated.timing(emojiAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+  
   // उत्तर चेक करें
   const checkAnswer = (index) => {
+    const isAnswerCorrect = index === questions[currentQuestion].correctAnswer;
+    
     setSelectedAnswer(index);
     setShowAnswer(true);
+    setIsCorrect(isAnswerCorrect);
+    setShowEmoji(true);
+    startEmojiAnimation();
     
     // सही उत्तर चेक करें
-    if (index === questions[currentQuestion].correctAnswer) {
+    if (isAnswerCorrect) {
       setScore(score + 1);
     }
     
-    // कुछ समय बाद अगले प्रश्न पर जाएं
+    // 2.25 सेकंड का समय
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
@@ -192,7 +219,7 @@ const QuizScreen = ({ route, navigation }) => {
         setCompleted(true);
         setIsTimerActive(false);
       }
-    }, 1500);
+    }, 2250); // 2.25 सेकंड का समय
   };
   
   // क्विज़ रीसेट करें
@@ -204,6 +231,7 @@ const QuizScreen = ({ route, navigation }) => {
     setCompleted(false);
     setTimeElapsed(0);
     setIsTimerActive(true);
+    setShowEmoji(false);
     fadeAnim.setValue(0);
     progressAnim.setValue(0);
   };
@@ -227,6 +255,9 @@ const QuizScreen = ({ route, navigation }) => {
         <View style={styles.resultContainer}>
           <Text style={styles.resultTitle}>क्विज़ पूरा हुआ!</Text>
           <View style={styles.scoreCard}>
+            <Text style={styles.resultEmoji}>
+              {score >= questions.length * 0.7 ? '🎉' : score >= questions.length * 0.4 ? '👍' : '😊'}
+            </Text>
             <Text style={styles.scoreText}>
               आपका स्कोर: <Text style={styles.scoreNumber}>{score}</Text>/{questions.length}
             </Text>
@@ -339,6 +370,31 @@ const QuizScreen = ({ route, navigation }) => {
           <Text style={styles.questionNumber}>प्रश्न {currentQuestion + 1}</Text>
           <Text style={styles.questionText}>{questions[currentQuestion].text}</Text>
           
+          {/* इमोजी एनिमेशन - प्रश्न के अंदर ऑप्शन के ऊपर */}
+          {showEmoji && (
+            <Animated.View 
+              style={[
+                styles.emojiContainer,
+                { 
+                  opacity: emojiAnim,
+                  transform: [
+                    { scale: emojiAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.5, 1.2, 1]
+                    })},
+                  ]
+                }
+              ]}
+            >
+              <Text style={styles.emojiText}>
+                {isCorrect ? '😃' : '😔'}
+              </Text>
+              <Text style={[styles.emojiSubtext, isCorrect ? styles.correctEmojiText : styles.incorrectEmojiText]}>
+                {isCorrect ? 'शाबाश!' : 'अगली बार'}
+              </Text>
+            </Animated.View>
+          )}
+          
           {/* विकल्प */}
           <View style={styles.optionsContainer}>
             {questions[currentQuestion].options.map((option, index) => (
@@ -382,7 +438,7 @@ const QuizScreen = ({ route, navigation }) => {
                 : styles.incorrectFeedbackText
             ]}>
               {selectedAnswer === questions[currentQuestion].correctAnswer
-                ? '✓ सही उत्तर!'
+                ? '✓ सही उत्तर! बहुत बढ़िया!'
                 : `✗ गलत उत्तर। सही उत्तर: ${questions[currentQuestion].options[questions[currentQuestion].correctAnswer]}`}
             </Text>
           </View>
@@ -447,15 +503,20 @@ const QuizScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EFEEEA',
+    backgroundColor: '#FDF0D5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FE7743',
+    backgroundColor: '#003049',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   backButton: {
     padding: 8,
@@ -490,6 +551,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   progressBar: {
     flex: 1,
@@ -501,12 +564,13 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FE7743',
+    backgroundColor: '#C1121F',
     borderRadius: 3,
   },
   progressText: {
-    color: '#273F4F',
+    color: '#003049',
     fontWeight: 'bold',
+    fontSize: 13,
   },
   content: {
     flex: 1,
@@ -514,27 +578,49 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
   },
+  // इमोजी स्टाइल्स - छोटे और क्यूट, कार्ड के अंदर
+  emojiContainer: {
+    alignItems: 'center',
+    marginVertical: 8,
+    position: 'relative',
+  },
+  emojiText: {
+    fontSize: 36, // छोटा साइज़
+    lineHeight: 40,
+  },
+  emojiSubtext: {
+    fontSize: 14, // छोटा साइज़
+    fontWeight: 'bold',
+    marginTop: -5, // थोड़ा ऊपर खिसकाएं
+  },
+  correctEmojiText: {
+    color: '#669BBC',
+  },
+  incorrectEmojiText: {
+    color: '#780000',
+  },
   questionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
   questionNumber: {
-    fontSize: 14,
-    color: '#FE7743',
-    marginBottom: 8,
+    fontSize: 13,
+    color: '#669BBC',
+    marginBottom: 6,
   },
   questionText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#273F4F',
-    marginBottom: 20,
+    color: '#003049',
+    marginBottom: 15,
+    lineHeight: 24,
   },
   optionsContainer: {
     marginTop: 5,
@@ -543,75 +629,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8F8F8',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 10, // कम पैडिंग
+    borderRadius: 10,
+    marginBottom: 8, // कम मार्जिन
     borderWidth: 1,
     borderColor: '#EFEEEA',
+    height: 50, // निश्चित हाइट
   },
   selectedOption: {
-    backgroundColor: '#FEF3ED',
-    borderColor: '#FE7743',
+    backgroundColor: '#FDF0D5',
+    borderColor: '#C1121F',
   },
   correctOption: {
     backgroundColor: '#EDF9F0',
-    borderColor: '#4CAF50',
+    borderColor: '#669BBC',
   },
   incorrectOption: {
-    backgroundColor: '#FEEDED',
-    borderColor: '#E74C3C',
+    backgroundColor: '#FEF0EF',
+    borderColor: '#780000',
   },
   optionIndex: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26, // छोटा साइज़
+    height: 26, // छोटा साइज़
+    borderRadius: 13,
     backgroundColor: '#EFEEEA',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   optionIndexText: {
-    fontSize: 12,
+    fontSize: 13, // छोटा फॉन्ट साइज़
     fontWeight: 'bold',
-    color: '#273F4F',
+    color: '#003049',
   },
   optionText: {
     flex: 1,
-    fontSize: 16,
-    color: '#273F4F',
+    fontSize: 15, // छोटा फॉन्ट साइज़
+    color: '#003049',
   },
   correctIndicator: {
-    fontSize: 18,
+    fontSize: 16, // छोटा साइज़
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: '#669BBC',
     marginLeft: 8,
   },
   incorrectIndicator: {
-    fontSize: 18,
+    fontSize: 16, // छोटा साइज़
     fontWeight: 'bold',
-    color: '#E74C3C',
+    color: '#780000',
     marginLeft: 8,
   },
   feedbackContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     marginBottom: 16,
-    elevation: 1,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
   feedbackText: {
-    fontSize: 16,
+    fontSize: 15, // छोटा फॉन्ट साइज़
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   correctFeedbackText: {
-    color: '#4CAF50',
+    color: '#669BBC',
   },
   incorrectFeedbackText: {
-    color: '#E74C3C',
+    color: '#780000',
   },
   threadSection: {
     backgroundColor: '#FFFFFF',
@@ -619,12 +707,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 20,
     borderLeftWidth: 3,
-    borderLeftColor: '#FE7743',
+    borderLeftColor: '#C1121F',
   },
   threadTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#273F4F',
+    color: '#003049',
     marginBottom: 8,
   },
   threadText: {
@@ -639,7 +727,7 @@ const styles = StyleSheet.create({
   },
   threadItem: {
     fontSize: 14,
-    color: '#273F4F',
+    color: '#003049',
     marginBottom: 6,
   },
   resultContainer: {
@@ -650,7 +738,7 @@ const styles = StyleSheet.create({
   resultTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#273F4F',
+    color: '#003049',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -666,20 +754,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginBottom: 30,
   },
+  resultEmoji: {
+    fontSize: 50,
+    marginBottom: 15,
+  },
   scoreText: {
     fontSize: 18,
-    color: '#273F4F',
+    color: '#003049',
     marginBottom: 8,
   },
   scoreNumber: {
     fontWeight: 'bold',
-    color: '#FE7743',
+    color: '#C1121F',
     fontSize: 24,
   },
   percentageText: {
     fontSize: 40,
     fontWeight: 'bold',
-    color: '#273F4F',
+    color: '#003049',
     marginBottom: 16,
   },
   resultProgressBar: {
@@ -692,7 +784,7 @@ const styles = StyleSheet.create({
   },
   resultProgressFill: {
     height: '100%',
-    backgroundColor: '#FE7743',
+    backgroundColor: '#C1121F',
     borderRadius: 5,
   },
   timeText: {
@@ -707,7 +799,7 @@ const styles = StyleSheet.create({
   },
   resultMessageText: {
     fontSize: 16,
-    color: '#273F4F',
+    color: '#003049',
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -721,12 +813,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     margin: 8,
+    elevation: 2,
   },
   tryAgainButton: {
-    backgroundColor: '#FE7743',
+    backgroundColor: '#C1121F',
   },
   homeButton: {
-    backgroundColor: '#273F4F',
+    backgroundColor: '#003049',
   },
   buttonText: {
     color: '#FFFFFF',
@@ -753,13 +846,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#273F4F',
+    color: '#003049',
     textAlign: 'center',
     marginBottom: 16,
   },
   modalText: {
     fontSize: 16,
-    color: '#273F4F',
+    color: '#003049',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -771,7 +864,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
-    color: '#273F4F',
+    color: '#003049',
     marginBottom: 6,
   },
   modalButtons: {
@@ -786,7 +879,7 @@ const styles = StyleSheet.create({
     margin: 8,
   },
   continueButton: {
-    backgroundColor: '#FE7743',
+    backgroundColor: '#C1121F',
   },
 });
 

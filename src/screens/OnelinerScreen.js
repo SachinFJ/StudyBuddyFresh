@@ -19,12 +19,12 @@ const { width, height } = Dimensions.get('window');
 
 /**
  * OnelinerScreen - वनलाइनर (एक-पंक्ति सार) स्क्रीन
- * @param {Object} route - नेविगेशन रूट जिसमें bookId, topicId होगा
+ * @param {Object} route - नेविगेशन रूट जिसमें bookId, subjectId, topicId होगा
  * @param {Object} navigation - नेविगेशन कंट्रोलर
  */
 const OnelinerScreen = ({ route, navigation }) => {
   // रूट पैरामीटर्स से डेटा प्राप्त करें
-  const { bookId, topicId } = route?.params || { bookId: 'book1', topicId: 'topic1' };
+  const { bookId, subjectId, topicId } = route?.params || { bookId: 'book1', subjectId: 'subject1', topicId: 'topic1' };
 
   // स्टेट
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,12 +42,19 @@ const OnelinerScreen = ({ route, navigation }) => {
   // टाइमर रेफरेंस
   const timerRef = useRef(null);
   
-  // पुस्तक और टॉपिक जानकारी
+  // पुस्तक, विषय और टॉपिक जानकारी
   const bookInfo = {
-    book1: { name: 'सामान्य ज्ञान', color: '#FE7743' },
-    book2: { name: 'भारतीय इतिहास', color: '#3498DB' },
-    book3: { name: 'भूगोल', color: '#5B8C5A' },
-    book4: { name: 'विज्ञान', color: '#9B59B6' },
+    book1: { name: 'सामान्य ज्ञान', color: '#003049', icon: '🧠' },
+    book2: { name: 'भारतीय इतिहास', color: '#C1121F', icon: '🏛️' },
+    book3: { name: 'भूगोल', color: '#669BBC', icon: '🌍' },
+    book4: { name: 'विज्ञान', color: '#780000', icon: '🔬' },
+  };
+  
+  const subjectInfo = {
+    subject1: { name: 'राष्ट्रीय', icon: '🏆' },
+    subject2: { name: 'अंतर्राष्ट्रीय', icon: '🌐' },
+    subject3: { name: 'खेल', icon: '⚽' },
+    subject4: { name: 'राज्य', icon: '🏛️' },
   };
   
   const topicInfo = {
@@ -309,7 +316,7 @@ const OnelinerScreen = ({ route, navigation }) => {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>वनलाइनर</Text>
           <Text style={styles.headerSubtitle}>
-            {bookInfo[bookId]?.name} - {topicInfo[topicId]?.name}
+            {bookInfo[bookId]?.name} {subjectInfo[subjectId] && `→ ${subjectInfo[subjectId]?.name}`} → {topicInfo[topicId]?.name}
           </Text>
         </View>
         
@@ -526,7 +533,7 @@ const OnelinerScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EFEEEA',
+    backgroundColor: '#FDF0D5',
   },
   darkContainer: {
     backgroundColor: '#1A1A1A',
@@ -535,9 +542,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#273F4F',
+    backgroundColor: '#003049',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   darkHeader: {
     backgroundColor: '#000',
@@ -579,26 +591,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   darkProgressContainer: {
     backgroundColor: '#333333',
+    borderBottomColor: '#444444',
   },
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#EFEEEA',
+    backgroundColor: '#F0F0F0',
     borderRadius: 3,
     marginRight: 10,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#273F4F',
+    backgroundColor: '#C1121F',
     borderRadius: 3,
   },
   progressText: {
-    color: '#273F4F',
+    color: '#003049',
     fontWeight: 'bold',
+    fontSize: 13,
   },
   darkText: {
     color: '#FFFFFF',
@@ -607,7 +623,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEEEA',
+    borderBottomColor: '#F0F0F0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   darkCategoryContainer: {
     backgroundColor: '#333333',
@@ -619,21 +640,26 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F8F8F8',
     borderRadius: 20,
     marginHorizontal: 4,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   darkCategoryButton: {
     backgroundColor: '#444444',
   },
   selectedCategoryButton: {
-    backgroundColor: '#273F4F',
+    backgroundColor: '#C1121F',
   },
   darkSelectedCategoryButton: {
     backgroundColor: '#555555',
   },
   categoryText: {
-    color: '#273F4F',
+    color: '#003049',
     fontWeight: '500',
   },
   selectedCategoryText: {
@@ -651,7 +677,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     overflow: 'hidden',
@@ -668,7 +694,7 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 18,
     lineHeight: 28,
-    color: '#273F4F',
+    color: '#003049',
     textAlign: 'center',
   },
   darkCardText: {
@@ -691,14 +717,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#669BBC',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   importantText: {
     fontSize: 12,
-    color: '#333333',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   cardActionBar: {
@@ -715,7 +741,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    color: '#273F4F',
+    color: '#003049',
     fontWeight: '500',
   },
   darkActionText: {
@@ -725,7 +751,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   bookmarkedIcon: {
-    color: '#FFD700',
+    color: '#C1121F',
     fontSize: 18,
   },
   gestureHint: {
@@ -755,7 +781,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#EFEEEA',
+    borderTopColor: '#F0F0F0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   darkStatsContainer: {
     backgroundColor: '#333333',
@@ -774,16 +805,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   darkModeActive: {
-    backgroundColor: '#FFD700',
+    backgroundColor: '#669BBC',
   },
   readingModeText: {
     fontSize: 12,
-    color: '#273F4F',
+    color: '#003049',
   },
   darkModeActiveText: {
-    color: '#333333',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });
