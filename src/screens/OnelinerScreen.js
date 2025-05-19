@@ -1,826 +1,214 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  FlatList,
-  Animated,
-  Dimensions,
-  Share,
-  Alert,
-  BackHandler,
-  PanResponder,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useSelector } from 'react-redux';
+import onelinerData from '../data/onelinerData';
+import Header from '../components/common/Header';
+import CustomButton from '../components/common/CustomButton';
+import Theme from '../utils/Theme';
 
-// स्क्रीन विंडो आयाम प्राप्त करें
-const { width, height } = Dimensions.get('window');
-
-/**
- * OnelinerScreen - वनलाइनर (एक-पंक्ति सार) स्क्रीन
- * @param {Object} route - नेविगेशन रूट जिसमें bookId, subjectId, topicId होगा
- * @param {Object} navigation - नेविगेशन कंट्रोलर
- */
-const OnelinerScreen = ({ route, navigation }) => {
-  // रूट पैरामीटर्स से डेटा प्राप्त करें
-  const { bookId, subjectId, topicId } = route?.params || { bookId: 'book1', subjectId: 'subject1', topicId: 'topic1' };
-
-  // स्टेट
+const OnelinerScreen = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [bookmarkedItems, setBookmarkedItems] = useState([]);
-  const [viewedItems, setViewedItems] = useState([]);
-  const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isTimerActive, setIsTimerActive] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [readingMode, setReadingMode] = useState(false);
+  const [viewedCount, setViewedCount] = useState(0);
   
-  // एनिमेशन वैल्यूज़
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const { selectedBook } = useSelector(state => state.books);
+  const { selectedTopic } = useSelector(state => state.topics);
+  const { current: language } = useSelector(state => state.language);
   
-  // टाइमर रेफरेंस
-  const timerRef = useRef(null);
-  
-  // पुस्तक, विषय और टॉपिक जानकारी
-  const bookInfo = {
-    book1: { name: 'सामान्य ज्ञान', color: '#003049', icon: '🧠' },
-    book2: { name: 'भारतीय इतिहास', color: '#C1121F', icon: '🏛️' },
-    book3: { name: 'भूगोल', color: '#669BBC', icon: '🌍' },
-    book4: { name: 'विज्ञान', color: '#780000', icon: '🔬' },
-  };
-  
-  const subjectInfo = {
-    subject1: { name: 'राष्ट्रीय', icon: '🏆' },
-    subject2: { name: 'अंतर्राष्ट्रीय', icon: '🌐' },
-    subject3: { name: 'खेल', icon: '⚽' },
-    subject4: { name: 'राज्य', icon: '🏛️' },
-  };
-  
-  const topicInfo = {
-    topic1: { name: 'इतिहास', icon: '📜' },
-    topic2: { name: 'भूगोल', icon: '🌍' },
-    topic3: { name: 'राजनीति', icon: '⚖️' },
-    topic4: { name: 'विज्ञान', icon: '🔬' },
-    topic5: { name: 'सामान्य ज्ञान', icon: '💡' },
-  };
-  
-  // श्रेणियां
-  const categories = [
-    { id: 'all', name: 'सभी' },
-    { id: 'important', name: 'महत्वपूर्ण' },
-    { id: 'definition', name: 'परिभाषा' },
-    { id: 'fact', name: 'तथ्य' },
-    { id: 'date', name: 'तिथि' },
-  ];
-  
-  // डेमो वनलाइनर डेटा
-  const oneliners = [
-    {
-      id: 'ol1',
-      text: 'भारत का क्षेत्रफल 32,87,263 वर्ग किलोमीटर है, जो विश्व का 2.4% है।',
-      category: 'fact',
-      important: true,
-    },
-    {
-      id: 'ol2',
-      text: 'हिमालय पर्वत श्रृंखला विश्व की सबसे युवा वलित पर्वत श्रृंखला है।',
-      category: 'fact',
-      important: false,
-    },
-    {
-      id: 'ol3',
-      text: 'भूगोल: भूपृष्ठ और प्राकृतिक पर्यावरण का वैज्ञानिक अध्ययन।',
-      category: 'definition',
-      important: true,
-    },
-    {
-      id: 'ol4',
-      text: 'भारत की सबसे लंबी नदी गंगा है, जिसकी कुल लंबाई 2,525 किलोमीटर है।',
-      category: 'fact',
-      important: true,
-    },
-    {
-      id: 'ol5',
-      text: 'भारत में 28 राज्य और 8 केंद्र शासित प्रदेश हैं।',
-      category: 'fact',
-      important: true,
-    },
-    {
-      id: 'ol6',
-      text: '15 अगस्त 1947 को भारत को स्वतंत्रता प्राप्त हुई थी।',
-      category: 'date',
-      important: true,
-    },
-    {
-      id: 'ol7',
-      text: 'ज्वार-भाटा चंद्रमा के गुरुत्वाकर्षण खिंचाव के कारण होता है।',
-      category: 'fact',
-      important: false,
-    },
-    {
-      id: 'ol8',
-      text: 'स्थानान्तरण कृषि: वह कृषि पद्धति जिसमें जंगल के एक भाग को काटकर खेती की जाती है।',
-      category: 'definition',
-      important: false,
-    },
-    {
-      id: 'ol9',
-      text: 'भारत का सबसे बड़ा राज्य क्षेत्रफल की दृष्टि से राजस्थान है।',
-      category: 'fact',
-      important: true,
-    },
-    {
-      id: 'ol10',
-      text: 'वायुमंडल: पृथ्वी के चारों ओर मौजूद गैसों का आवरण।',
-      category: 'definition',
-      important: true,
-    },
-  ];
-  
-  // फिल्टर किए गए वनलाइनर्स
-  const filteredOneliners = selectedCategory === 'all' 
-    ? oneliners 
-    : oneliners.filter(item => item.category === selectedCategory);
-  
-  // टाइमर सेटअप
-  useEffect(() => {
-    if (isTimerActive) {
-      timerRef.current = setInterval(() => {
-        setTimeElapsed(prev => prev + 1);
-      }, 1000);
-    }
-    
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+  const getOneliners = () => {
+    try {
+      if (!language || !selectedBook || !selectedBook.id || !selectedTopic || !selectedTopic.id) {
+        console.log('Missing required selection:', { language, selectedBook, selectedTopic });
+        return [];
       }
-    };
-  }, [isTimerActive]);
-  
-  // बैक बटन हैंडलर
-  useEffect(() => {
-    const backAction = () => {
-      // प्रगति और समय ट्रैक करें...
       
-      // वापस होम स्क्रीन पर जाएँ
-      navigation.goBack();
-      return true;
-    };
-    
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-    
-    return () => backHandler.remove();
-  }, [navigation, viewedItems, timeElapsed]);
+      console.log('Attempting to fetch oneliner data for:', {
+        language,
+        bookId: selectedBook.id,
+        topicId: selectedTopic.id
+      });
+      
+      if (!onelinerData) {
+        console.log('onelinerData is undefined');
+        return [];
+      }
+      
+      const languageData = onelinerData[language];
+      if (!languageData) {
+        console.log(`No data for language: ${language}`);
+        return [];
+      }
+      
+      const bookData = languageData[selectedBook.id];
+      if (!bookData) {
+        console.log(`No data for book: ${selectedBook.id}`);
+        return [];
+      }
+      
+      const topicData = bookData[selectedTopic.id];
+      if (!topicData) {
+        console.log(`No data for topic: ${selectedTopic.id}`);
+        return [];
+      }
+      
+      return topicData;
+    } catch (error) {
+      console.error('Error getting oneliners:', error);
+      return [];
+    }
+  };
   
-  // वनलाइनर के view को ट्रैक करें
+  const oneliners = getOneliners();
+  
   useEffect(() => {
-    if (filteredOneliners.length > 0 && !viewedItems.includes(filteredOneliners[currentIndex].id)) {
-      setViewedItems([...viewedItems, filteredOneliners[currentIndex].id]);
+    if (!oneliners || oneliners.length === 0) {
+      Alert.alert(
+        'डेटा उपलब्ध नहीं है',
+        'चयनित पुस्तक और टॉपिक के लिए कोई वनलाइनर उपलब्ध नहीं हैं। कृपया अन्य पुस्तक या टॉपिक चुनें।',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
     }
-  }, [currentIndex, filteredOneliners, viewedItems]);
+  }, [oneliners, navigation]);
   
-  // टाइमर को फॉर्मेट करें (MM:SS)
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // टच जेस्चर (स्वाइप) की सेटिंग
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // स्वाइप के दौरान कार्ड को हिलाएं
-        translateXAnim.setValue(gestureState.dx);
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        // अगर स्वाइप पर्याप्त दूरी तक है
-        if (gestureState.dx < -50 && currentIndex < filteredOneliners.length - 1) {
-          // बाएँ स्वाइप (अगला)
-          goToNext();
-        } else if (gestureState.dx > 50 && currentIndex > 0) {
-          // दाएँ स्वाइप (पिछला)
-          goToPrevious();
-        } else {
-          // स्वाइप पर्याप्त नहीं, कार्ड को वापस लाएं
-          Animated.spring(translateXAnim, {
-            toValue: 0,
-            friction: 5,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
-  
-  // अगले वनलाइनर पर जाएँ
-  const goToNext = () => {
-    if (currentIndex < filteredOneliners.length - 1) {
-      // फेड आउट
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentIndex(currentIndex + 1);
-        translateXAnim.setValue(0);
-        
-        // फेड इन
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }).start();
-      });
+  const handleNext = () => {
+    if (oneliners && oneliners.length > 0 && currentIndex < oneliners.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setViewedCount(viewedCount + 1);
     }
   };
   
-  // पिछले वनलाइनर पर जाएँ
-  const goToPrevious = () => {
+  const handlePrevious = () => {
     if (currentIndex > 0) {
-      // फेड आउट
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentIndex(currentIndex - 1);
-        translateXAnim.setValue(0);
-        
-        // फेड इन
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }).start();
-      });
+      setCurrentIndex(currentIndex - 1);
     }
   };
   
-  // बुकमार्क टॉगल
-  const toggleBookmark = (id) => {
-    if (bookmarkedItems.includes(id)) {
-      setBookmarkedItems(bookmarkedItems.filter(item => item !== id));
-    } else {
-      setBookmarkedItems([...bookmarkedItems, id]);
-    }
+  const goBack = () => {
+    navigation.goBack();
   };
   
-  // वनलाइनर शेयर करें
-  const shareOneliner = (text) => {
-    Share.share({
-      message: text + '\n\nStudyBuddy ऐप से शेयर किया गया',
-    })
-      .then(result => console.log(result))
-      .catch(error => console.log(error));
-  };
-  
-  // पढ़ने का मोड टॉगल करें
-  const toggleReadingMode = () => {
-    setReadingMode(!readingMode);
-  };
-  
-  // श्रेणी चुनें
-  const selectCategory = (categoryId) => {
-    setSelectedCategory(categoryId);
-    setCurrentIndex(0);
-  };
-  
-  // प्रगति प्रतिशत की गणना
-  const calculateProgress = () => {
-    return filteredOneliners.length > 0 
-      ? Math.round((viewedItems.filter(id => 
-          filteredOneliners.some(item => item.id === id)).length / filteredOneliners.length) * 100)
-      : 0;
-  };
-  
-  return (
-    <SafeAreaView style={[
-      styles.container,
-      readingMode && styles.darkContainer
-    ]}>
-      {/* हेडर */}
-      <View style={[
-        styles.header,
-        readingMode && styles.darkHeader
-      ]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>वनलाइनर</Text>
-          <Text style={styles.headerSubtitle}>
-            {bookInfo[bookId]?.name} {subjectInfo[subjectId] && `→ ${subjectInfo[subjectId]?.name}`} → {topicInfo[topicId]?.name}
+  if (!oneliners || oneliners.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Header 
+          title={selectedTopic && selectedTopic.name ? selectedTopic.name : (language === 'hindi' ? 'वनलाइनर' : 'Oneliners')} 
+          showBackButton 
+          onBackPress={goBack} 
+        />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            {language === 'hindi' ? 'लोड हो रहा है...' : 'Loading...'}
           </Text>
         </View>
-        
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>{formatTime(timeElapsed)}</Text>
-        </View>
       </View>
+    );
+  }
+  
+  return (
+    <View style={styles.container}>
+      <Header 
+        title={selectedTopic && selectedTopic.name ? selectedTopic.name : (language === 'hindi' ? 'वनलाइनर' : 'Oneliners')}
+        showBackButton 
+        onBackPress={goBack} 
+      />
       
-      {/* प्रगति बार */}
-      <View style={[
-        styles.progressContainer,
-        readingMode && styles.darkProgressContainer
-      ]}>
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill,
-              { width: `${calculateProgress()}%` }
-            ]} 
-          />
-        </View>
-        <Text style={[
-          styles.progressText,
-          readingMode && styles.darkText
-        ]}>
-          {currentIndex + 1} / {filteredOneliners.length}
+      <View style={styles.progressContainer}>
+        <Text style={styles.progressText}>
+          {currentIndex + 1}/{oneliners.length}
         </Text>
       </View>
       
-      {/* श्रेणी फिल्टर */}
-      <View style={[
-        styles.categoryContainer,
-        readingMode && styles.darkCategoryContainer
-      ]}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={categories}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.categoryButton,
-                selectedCategory === item.id && styles.selectedCategoryButton,
-                readingMode && styles.darkCategoryButton,
-                selectedCategory === item.id && readingMode && styles.darkSelectedCategoryButton,
-              ]}
-              onPress={() => selectCategory(item.id)}
-            >
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === item.id && styles.selectedCategoryText,
-                readingMode && styles.darkText,
-              ]}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.categoryList}
-        />
-      </View>
-      
-      {/* मुख्य कंटेंट - वनलाइनर कार्ड */}
-      {filteredOneliners.length > 0 ? (
-        <View style={styles.cardContainer} {...panResponder.panHandlers}>
-          <Animated.View 
-            style={[
-              styles.card,
-              readingMode && styles.darkCard,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateX: translateXAnim }],
-              }
-            ]}
-          >
-            <View style={styles.cardInner}>
-              <Text style={[
-                styles.cardText,
-                readingMode && styles.darkCardText
-              ]}>
-                {filteredOneliners[currentIndex].text}
-              </Text>
-              
-              <View style={styles.cardCategoryBadge}>
-                <Text style={styles.cardCategoryText}>
-                  {categories.find(cat => cat.id === filteredOneliners[currentIndex].category)?.name || 'अन्य'}
-                </Text>
-              </View>
-              
-              {filteredOneliners[currentIndex].important && (
-                <View style={styles.importantBadge}>
-                  <Text style={styles.importantText}>महत्वपूर्ण</Text>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.cardActionBar}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => goToPrevious()}
-                disabled={currentIndex === 0}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  currentIndex === 0 && styles.disabledButton,
-                  readingMode && styles.darkActionText
-                ]}>
-                  ◀ पिछला
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => toggleBookmark(filteredOneliners[currentIndex].id)}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  bookmarkedItems.includes(filteredOneliners[currentIndex].id) && styles.bookmarkedIcon,
-                  readingMode && styles.darkActionText
-                ]}>
-                  {bookmarkedItems.includes(filteredOneliners[currentIndex].id) ? '★' : '☆'}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => shareOneliner(filteredOneliners[currentIndex].text)}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  readingMode && styles.darkActionText
-                ]}>
-                  ↗ शेयर
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => goToNext()}
-                disabled={currentIndex === filteredOneliners.length - 1}
-              >
-                <Text style={[
-                  styles.actionButtonText,
-                  currentIndex === filteredOneliners.length - 1 && styles.disabledButton,
-                  readingMode && styles.darkActionText
-                ]}>
-                  अगला ▶
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.cardContainer}>
+          <Text style={styles.cardText}>
+            {oneliners[currentIndex].text}
+          </Text>
           
-          <View style={styles.gestureHint}>
-            <Text style={[
-              styles.gestureHintText,
-              readingMode && styles.darkText
-            ]}>
-              ◀ बाएँ या दाएँ स्वाइप करें ▶
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Text style={[
-            styles.emptyText,
-            readingMode && styles.darkText
-          ]}>
-            इस श्रेणी में कोई वनलाइनर नहीं है
-          </Text>
-        </View>
-      )}
-      
-      {/* स्टेट्स और टूल्स */}
-      <View style={[
-        styles.statsContainer,
-        readingMode && styles.darkStatsContainer
-      ]}>
-        <View style={styles.stats}>
-          <Text style={[
-            styles.statText,
-            readingMode && styles.darkText
-          ]}>
-            देखे गए: {viewedItems.filter(id => 
-              filteredOneliners.some(item => item.id === id)).length} / {filteredOneliners.length}
-          </Text>
-          <Text style={[
-            styles.statText,
-            readingMode && styles.darkText
-          ]}>
-            बुकमार्क: {bookmarkedItems.filter(id => 
-              filteredOneliners.some(item => item.id === id)).length}
+          <Text style={styles.categoryText}>
+            {language === 'hindi' ? 'श्रेणी' : 'Category'}: {oneliners[currentIndex].category}
           </Text>
         </View>
         
-        <TouchableOpacity
-          style={[
-            styles.readingModeButton,
-            readingMode && styles.darkModeActive
-          ]}
-          onPress={toggleReadingMode}
-        >
-          <Text style={[
-            styles.readingModeText,
-            readingMode && styles.darkModeActiveText
-          ]}>
-            {readingMode ? '💡 सामान्य मोड' : '🌙 पढ़ने का मोड'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View style={styles.navigationContainer}>
+          <CustomButton 
+            title={language === 'hindi' ? 'पिछला' : 'Previous'} 
+            onPress={handlePrevious} 
+            style={[styles.navButton, currentIndex === 0 && styles.disabledButton]}
+            disabled={currentIndex === 0}
+          />
+          <CustomButton 
+            title={language === 'hindi' ? 'अगला' : 'Next'} 
+            onPress={handleNext} 
+            style={[styles.navButton, currentIndex === oneliners.length - 1 && styles.disabledButton]}
+            disabled={currentIndex === oneliners.length - 1}
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF0D5',
+    backgroundColor: Theme.colors.background,
   },
-  darkContainer: {
-    backgroundColor: '#1A1A1A',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#003049',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  darkHeader: {
-    backgroundColor: '#000',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  headerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  timerContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  timerText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+    flexGrow: 1,
   },
   progressContainer: {
-    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 10,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  darkProgressContainer: {
-    backgroundColor: '#333333',
-    borderBottomColor: '#444444',
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 3,
-    marginRight: 10,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#C1121F',
-    borderRadius: 3,
   },
   progressText: {
-    color: '#003049',
+    fontSize: 16,
+    color: Theme.colors.secondary,
     fontWeight: 'bold',
-    fontSize: 13,
-  },
-  darkText: {
-    color: '#FFFFFF',
-  },
-  categoryContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  darkCategoryContainer: {
-    backgroundColor: '#333333',
-    borderBottomColor: '#444444',
-  },
-  categoryList: {
-    paddingHorizontal: 12,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 20,
-    marginHorizontal: 4,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-  },
-  darkCategoryButton: {
-    backgroundColor: '#444444',
-  },
-  selectedCategoryButton: {
-    backgroundColor: '#C1121F',
-  },
-  darkSelectedCategoryButton: {
-    backgroundColor: '#555555',
-  },
-  categoryText: {
-    color: '#003049',
-    fontWeight: '500',
-  },
-  selectedCategoryText: {
-    color: '#FFFFFF',
   },
   cardContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 20,
+    marginVertical: 20,
+    elevation: 2,
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    overflow: 'hidden',
-  },
-  darkCard: {
-    backgroundColor: '#333333',
-  },
-  cardInner: {
-    padding: 25,
-    paddingBottom: 40,
     minHeight: 200,
-    justifyContent: 'center',
   },
   cardText: {
     fontSize: 18,
     lineHeight: 28,
-    color: '#003049',
+    color: '#000',
     textAlign: 'center',
   },
-  darkCardText: {
-    color: '#FFFFFF',
+  categoryText: {
+    marginTop: 20,
+    fontSize: 14,
+    color: Theme.colors.primary,
+    textAlign: 'right',
+    fontStyle: 'italic',
   },
-  cardCategoryBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  cardCategoryText: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  importantBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#669BBC',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  importantText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  cardActionBar: {
+  navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    marginTop: 20,
   },
-  actionButton: {
-    padding: 8,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    color: '#003049',
-    fontWeight: '500',
-  },
-  darkActionText: {
-    color: '#CCCCCC',
+  navButton: {
+    flex: 0.48,
   },
   disabledButton: {
-    opacity: 0.3,
+    backgroundColor: '#ccc',
   },
-  bookmarkedIcon: {
-    color: '#C1121F',
-    fontSize: 18,
-  },
-  gestureHint: {
-    marginTop: 16,
-    opacity: 0.5,
-  },
-  gestureHintText: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  emptyContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  darkStatsContainer: {
-    backgroundColor: '#333333',
-    borderTopColor: '#444444',
-  },
-  stats: {
-    flexDirection: 'column',
-  },
-  statText: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  readingModeButton: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-  },
-  darkModeActive: {
-    backgroundColor: '#669BBC',
-  },
-  readingModeText: {
-    fontSize: 12,
-    color: '#003049',
-  },
-  darkModeActiveText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+  loadingText: {
+    fontSize: 18,
+    color: Theme.colors.primary,
   },
 });
 

@@ -1,70 +1,49 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// इनिशियल स्टेट
 const initialState = {
   quizActivity: [],
   onelinerActivity: [],
-  miscActivity: [],
+  miscActivity: []
 };
 
 const progressSlice = createSlice({
   name: 'progress',
   initialState,
   reducers: {
-    // क्विज़ प्रगति रिकॉर्ड करने के लिए
-    recordQuizActivity: (state, action) => {
-      state.quizActivity.push({
-        ...action.payload,
-        date: new Date().toISOString(),
-      });
-    },
-    
-    // वनलाइनर प्रगति रिकॉर्ड करने के लिए
-    recordOnelinerActivity: (state, action) => {
-      state.onelinerActivity.push({
-        ...action.payload,
-        date: new Date().toISOString(),
-      });
-    },
-    
-    // मिश्रित प्रश्नों की प्रगति रिकॉर्ड करने के लिए
-    recordMiscActivity: (state, action) => {
-      state.miscActivity.push({
-        ...action.payload,
-        date: new Date().toISOString(),
-      });
-    },
-    
-    // किसी विशेष प्रकार की प्रगति को साफ़ करने के लिए
-    clearActivityHistory: (state, action) => {
-      const { activityType } = action.payload;
+    // प्रगति अपडेट करने के लिए एक्शन
+    updateProgress: (state, action) => {
+      const { type, ...progressData } = action.payload;
+      const timestamp = new Date().toISOString();
       
-      switch (activityType) {
-        case 'quiz':
-          state.quizActivity = [];
-          break;
-        case 'oneliner':
-          state.onelinerActivity = [];
-          break;
-        case 'misc':
-          state.miscActivity = [];
-          break;
-        case 'all':
-          state.quizActivity = [];
-          state.onelinerActivity = [];
-          state.miscActivity = [];
-          break;
-        default:
-          break;
+      if (type === 'quiz') {
+        state.quizActivity.push({
+          ...progressData,
+          date: timestamp
+        });
+      } else if (type === 'oneliner') {
+        state.onelinerActivity.push({
+          ...progressData,
+          date: timestamp
+        });
+      } else if (type === 'misc') {
+        state.miscActivity.push({
+          ...progressData,
+          date: timestamp
+        });
       }
     },
-  },
+    // सभी प्रगति क्लियर करने के लिए एक्शन
+    clearProgress: (state) => {
+      state.quizActivity = [];
+      state.onelinerActivity = [];
+      state.miscActivity = [];
+    }
+  }
 });
 
-export const { 
-  recordQuizActivity, 
-  recordOnelinerActivity, 
-  recordMiscActivity,
-  clearActivityHistory 
-} = progressSlice.actions;
+// एक्शन्स एक्सपोर्ट करें
+export const { updateProgress, clearProgress } = progressSlice.actions;
 
+// रिड्यूसर एक्सपोर्ट करें
 export default progressSlice.reducer;

@@ -1,29 +1,30 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// इनिशियल स्टेट
 const initialState = {
-  current: 'hindi', // डिफॉल्ट भाषा - hindi या english
-  available: ['hindi', 'english'],
+  current: 'hindi', // 'hindi' या 'english'
+  available: ['hindi', 'english']
 };
 
 const languageSlice = createSlice({
   name: 'language',
   initialState,
   reducers: {
-    // भाषा परिवर्तन करने के लिए
-    setLanguage: (state, action) => {
-      const newLanguage = action.payload;
-      if (state.available.includes(newLanguage)) {
-        state.current = newLanguage;
-      }
-    },
-    
-    // हिंदी और अंग्रेजी के बीच टॉगल करने के लिए
+    // भाषा टॉगल करने के लिए एक्शन
     toggleLanguage: (state) => {
       state.current = state.current === 'hindi' ? 'english' : 'hindi';
     },
-  },
+    // विशिष्ट भाषा सेट करने के लिए एक्शन
+    setLanguage: (state, action) => {
+      if (state.available.includes(action.payload)) {
+        state.current = action.payload;
+      }
+    }
+  }
 });
 
-export const { setLanguage, toggleLanguage } = languageSlice.actions;
+// एक्शन्स एक्सपोर्ट करें
+export const { toggleLanguage, setLanguage } = languageSlice.actions;
 
+// रिड्यूसर एक्सपोर्ट करें
 export default languageSlice.reducer;
